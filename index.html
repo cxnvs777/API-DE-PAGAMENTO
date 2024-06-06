@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pagamento com Stripe</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <form id="payment-form">
+        <input type="email" id="email" placeholder="Email" required>
+        <div id="card-element"></div>
+        <button type="submit">Pagar</button>
+        <div id="payment-result"></div>
+    </form>
+
+    <script>
+        const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx'); // sua chave pública
+        const elements = stripe.elements();
+        const card = elements.create('card');
+        card.mount('#card-element');
+
+        const form = document.getElementById('payment-form');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const {token, error} = await stripe.createToken(card);
+
+            if (error) {
+                document.getElementById('payment-result').textContent = error.message;
+                return;
+            }
+
+            const email = document.getElementById('email').value;
+            const amount = 10; // valor fixo para teste
+
+            const response = await fetch('/pay', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({email, token: token.id, amount})
+            });
+
+            const result = await response.json();
+            document.getElementById('payment-result').textContent = result.status === 'success' ? 'Pagamento realizado com sucesso!' : `Erro: ${result.message}`;
+            document.getElementById('payment-result').className = result.status;
+        });
+    </script>
+</body>
+</html>
